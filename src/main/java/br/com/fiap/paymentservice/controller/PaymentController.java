@@ -1,44 +1,60 @@
 package br.com.fiap.paymentservice.controller;
 
-import br.com.fiap.paymentservice.Payment;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.fiap.paymentservice.Payment;
+import br.com.fiap.paymentservice.handler.ExceptionReponse;
+import br.com.fiap.paymentservice.handler.PaymentNotFoundException;
+import br.com.fiap.paymentservice.handler.RestResponseEntityExceptionHandler;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
 @RequestMapping("/payment")
+
 public class PaymentController {
 
     private List<Payment> payments = new ArrayList<>();
 
     @GetMapping("/findById/{id}")
     public Payment getPedido(@PathVariable int id) {
-        return payments.stream().filter(o -> o.getIdtransacao() == id).findAny().orElse(null);
+        Payment payment = payments.stream().filter(o -> o.getIdtransacao() == id).findAny().orElse(null);
+        if(payment == null) {
+        	throw new PaymentNotFoundException("id:" + id);
+        } else {
+        	return payment;
+        }
     }
 
     @PostMapping("/save")
-    public ResponseEntity<Payment> savePedido(@RequestBody Payment payment) {
+    public ResponseEntity<?> savePedido(@RequestBody Payment payment) {
         SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy");
         payments.add(payment);
         try {
             URI uri = new URI("/order/" + payment.getIdtransacao());
             return new ResponseEntity(uri, HttpStatus.OK);
         } catch (Exception e){
-            System.out.println(e.getMessage());
+            return new RestResponseEntityExceptionHandler().handlePedidoRespondeEntity(new ExceptionReponse(new Date(), e.getMessage(), HttpStatus.NOT_FOUND));
         }
-        return new ResponseEntity<>(payment, HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Payment> updatePedido(@PathVariable int id, @RequestBody Payment payment) {
+    public ResponseEntity<?> updatePedido(@PathVariable int id, @RequestBody Payment payment) {
         Payment orderSelect = payments.stream().filter(o -> o.getIdtransacao() == id).findAny().orElse(null);
         orderSelect.setNumerocartao(payment.getNumerocartao());
         orderSelect.setValidade(payment.getValidade());
@@ -48,21 +64,19 @@ public class PaymentController {
             URI uri = new URI("/update/" + payment.getIdtransacao());
             return new ResponseEntity(uri, HttpStatus.OK);
         } catch (Exception e){
-            System.out.println(e.getMessage());
+        	return new RestResponseEntityExceptionHandler().handlePedidoRespondeEntity(new ExceptionReponse(new Date(), e.getMessage(), HttpStatus.NOT_FOUND));
         }
-        return new ResponseEntity<>(orderSelect, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Payment> deletePedido(@PathVariable int id) {
+    public ResponseEntity<?> deletePedido(@PathVariable int id) {
         Payment orderSelect = payments.stream().filter(o -> o.getIdtransacao() == id).findAny().orElse(null);
         payments.remove(orderSelect);
         try {
             URI uri = new URI("/delete/" + orderSelect.getIdtransacao());
             return new ResponseEntity(uri, HttpStatus.OK);
         } catch (Exception e){
-            System.out.println(e.getMessage());
+            return new RestResponseEntityExceptionHandler().handlePedidoRespondeEntity(new ExceptionReponse(new Date(), e.getMessage(), HttpStatus.NOT_FOUND));
         }
-        return new ResponseEntity<>(orderSelect, HttpStatus.OK);
     }
 }
