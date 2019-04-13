@@ -21,9 +21,7 @@ import br.com.fiap.paymentservice.Payment;
 import br.com.fiap.paymentservice.handler.ExceptionReponse;
 import br.com.fiap.paymentservice.handler.PaymentNotFoundException;
 import br.com.fiap.paymentservice.handler.RestResponseEntityExceptionHandler;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @RestController
 @RequestMapping("/payment")
 
